@@ -1,0 +1,19 @@
+name: crewai-office-visualizer
+
+services:
+  proxy:
+    build: ./proxy
+    ports:
+      - "18765:8000"
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      args:
+        VITE_WS_URL: ws://localhost:18765/ws
+    ports:
+      - "17300:80"
+    depends_on:
+      - proxy
+    restart: unless-stopped
