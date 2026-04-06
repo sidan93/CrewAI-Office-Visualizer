@@ -9,8 +9,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/ws': { target: proxyTarget, ws: true },
-      '/event': proxyTarget,
+      '/w': { target: proxyTarget, ws: true },
+      '/workspaces': proxyTarget,
       '/health': proxyTarget,
     },
   },

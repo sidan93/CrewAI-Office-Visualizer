@@ -21,7 +21,12 @@ import { canvasToMapPoint } from './officeCanvas/viewport'
 const MOVE_MS = 1200
 const MAX_EVENTS = 80
 
-export function OfficeCanvas() {
+type OfficeCanvasProps = {
+  workspaceId: string
+  workspaceToken: string
+}
+
+export function OfficeCanvas({ workspaceId, workspaceToken }: OfficeCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const agentsRef = useRef<Map<string, AgentVisual>>(new Map())
   const mapImageRef = useRef<HTMLImageElement | null>(null)
@@ -57,6 +62,8 @@ export function OfficeCanvas() {
   useOfficeRealtime({
     agentsRef,
     mapDataDraftRef,
+    workspaceId,
+    workspaceToken,
     setStatus,
     setLastError,
     setRecentEvents,
@@ -333,10 +340,8 @@ export function OfficeCanvas() {
         ) : null}
       </div>
       <p className="text-[8px] leading-relaxed text-[#8b93b8]">
-        POST <span className="text-slate-300">agent</span> +{' '}
-        <span className="text-slate-300">action</span> to /event — positions
-        come from map zones (first visit: entrance → desk; idle/end → break
-        area).
+        POST events to <span className="text-slate-300">/w/{workspaceId}/event</span> with Bearer token.
+        Positions come from map zones (first visit: entrance → desk; idle/end → break area).
         {mapDataDraft?.zones
           ? ` Zones: ${Object.keys(mapDataDraft.zones).length}.`
           : ''}
