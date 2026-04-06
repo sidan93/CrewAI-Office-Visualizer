@@ -1,0 +1,65 @@
+{
+  "map_metadata": {
+    "file": "01_office.png",
+    "resolution": { "width": 2752, "height": 1536 },
+    "style": "Isometric Blueprint Pixel Art"
+  },
+  "zones": {
+    "relax_area": {
+      "name": "Break Area / Lounge",
+      "center": { "x": 550, "y": 400 },
+      "door_way": { "x": 1050, "y": 280 },
+      "seats": [
+        { "id": "sofa_left_1", "x": 300, "y": 300 },
+        { "id": "sofa_left_2", "x": 230, "y": 350 },
+        { "id": "sofa_bottom_1", "x": 450, "y": 450 },
+        { "id": "armchair_1", "x": 380, "y": 250 },
+        { "id": "beanbag_1", "x": 550, "y": 280 },
+        { "id": "beanbag_2", "x": 750, "y": 280 },
+        { "id": "coffee_stool_1", "x": 800, "y": 220 }
+      ]
+    },
+    "work_open_space": {
+      "name": "Main Development Zone",
+      "center": { "x": 1400, "y": 900 },
+      "door_way": { "x": 1380, "y": 1480 },
+      "seats": [
+        { "id": "desk_top_left_chair", "x": 1250, "y": 420 },
+        { "id": "desk_top_right_chair", "x": 1600, "y": 420 },
+        { "id": "desk_mid_left_chair_1", "x": 1150, "y": 650 },
+        { "id": "desk_mid_left_chair_2", "x": 1350, "y": 650 },
+        { "id": "desk_mid_right_chair_1", "x": 1550, "y": 650 },
+        { "id": "desk_mid_right_chair_2", "x": 1750, "y": 650 },
+        { "id": "desk_bottom_left_chair", "x": 1180, "y": 1050 },
+        { "id": "desk_bottom_right_chair", "x": 1580, "y": 1050 },
+        { "id": "desk_bottom_single_chair", "x": 1400, "y": 1320 }
+      ]
+    },
+    "meeting_room": {
+      "name": "Conference Room",
+      "center": { "x": 2350, "y": 750 },
+      "door_way": { "x": 1920, "y": 1100 },
+      "seats": [
+        { "id": "conf_top_head", "x": 2500, "y": 380 },
+        { "id": "conf_left_1", "x": 2250, "y": 500 },
+        { "id": "conf_left_2", "x": 2320, "y": 580 },
+        { "id": "conf_left_3", "x": 2390, "y": 660 },
+        { "id": "conf_left_4", "x": 2460, "y": 740 },
+        { "id": "conf_right_1", "x": 2150, "y": 620 },
+        { "id": "conf_right_2", "x": 2220, "y": 700 },
+        { "id": "conf_right_3", "x": 2290, "y": 780 },
+        { "id": "conf_right_4", "x": 2360, "y": 860 },
+        { "id": "conf_bottom_head", "x": 2100, "y": 950 }
+      ]
+    },
+    "lobby_entry": {
+      "name": "Office Entrance",
+      "center": { "x": 1950, "y": 1420 },
+      "door_way": { "x": 2000, "y": 1530 }
+    }
+  },
+  "logic_notes": {
+    "collision": "Walls are thick blue lines. Paths must go through door_ways.",
+    "seating_logic": "If zone is target, frontend should check which seat_id is 'occupied: false' and move sprite there."
+  }
+}

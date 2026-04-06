@@ -52,12 +52,20 @@ Or rebuild and restart everything in one step:
 | **UI** | [http://localhost:17300](http://localhost:17300) | Host port **17300** → nginx `80` in the container. WebSocket: `ws://localhost:18765/ws` (set at image build via `VITE_WS_URL`). |
 | **Proxy API** | [http://localhost:18765](http://localhost:18765) | Host port **18765** → container `8000`. `GET /health`, `POST /event`, `WebSocket /ws`. |
 
+### Swagger / OpenAPI
+
+When the proxy is running, API docs are available at:
+
+- Swagger UI: [http://localhost:18765/docs](http://localhost:18765/docs)
+- ReDoc: [http://localhost:18765/redoc](http://localhost:18765/redoc)
+- OpenAPI JSON: [http://localhost:18765/openapi.json](http://localhost:18765/openapi.json)
+
 Send a sample event (with the stack running):
 
 ```bash
 curl -sS -X POST http://127.0.0.1:18765/event \
   -H 'Content-Type: application/json' \
-  -d '{"agent":"demo","x":0.5,"y":0.4,"action":"think"}'
+  -d '{"agent":"demo","action":"WORKING"}'
 ```
 
 Smoke scripts (same `BASE_URL` as above by default):
@@ -101,9 +109,23 @@ JSON body for `POST /event`:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `agent` | string | yes | Agent id / display key. |
-| `x`, `y` | number | yes | Normalized position on the map, each in `[0, 1]`. |
-| `action` | string | no | Short label on the canvas. |
-| `message` | string | no | Reserved for future UI (optional). |
+| `action` | enum | yes | **Strict action enum**: `REGISTERED`, `IDLE`, `MEETING`, `WORKING`. Any other value is rejected with HTTP `422`. |
+| `message` | string | no | Optional detail (shown in the event log later if wired). |
+
+## Hero sprite pack contract
+
+Character rendering is configured in `ui/src/agentSprites.ts`, so `OfficeCanvas` only orchestrates map and movement.
+
+- Source files: `ui/src/assets/heroes/*.png` (one PNG per character).
+- Current sheet layout for each PNG:
+  - `64x128` image;
+  - 4 rows (top to bottom): `down`, `left`, `right`, `up`;
+  - 3 columns (left to right): `leftFootForward`, `legsTogether`, `rightFootForward`.
+- Walk animation cycle: `1-2-3-2-1` (0-based frame indices: `0-1-2-1-0`).
+- Idle frame: center column (`legsTogether`) with synthetic facing turns by timer.
+- Character selection is deterministic by agent id (stable pseudo-random) to keep the same avatar for one agent.
+
+To switch to another sprite pack, replace files in `ui/src/assets/heroes/` and adjust constants / timing in `ui/src/agentSprites.ts`.
 
 ## License
 
