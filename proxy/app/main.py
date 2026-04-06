@@ -1,8 +1,10 @@
+import asyncio
 import json
 from enum import Enum
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from app.idle_roam import IdleRoamConfig, IdleRoamTracker, build_idle_roam_message
 
 app = FastAPI(
     title="CrewAI Office Visualizer API",
@@ -82,6 +84,7 @@ class ConnectionManager:
     def __init__(self) -> None:
         self._connections: list[WebSocket] = []
         self._agents: dict[str, OfficeEvent] = {}
+        self._idle_roam = IdleRoamTracker()
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -104,7 +107,24 @@ class ConnectionManager:
             self._connections.remove(websocket)
 
     def upsert_agent_event(self, event: OfficeEvent) -> None:
+        self._idle_roam.observe_event(event.agent, event.action.value)
         self._agents[event.agent] = event
+
+    def collect_idle_roam_events(self, config: IdleRoamConfig) -> list[OfficeEvent]:
+        actions_by_agent = {
+            agent: snapshot.action.value for agent, snapshot in self._agents.items()
+        }
+        emissions = self._idle_roam.collect(actions_by_agent, config)
+        events: list[OfficeEvent] = []
+        for emission in emissions:
+            event = OfficeEvent(
+                agent=emission.agent,
+                action=AgentAction.IDLE,
+                message=build_idle_roam_message(emission.sequence),
+            )
+            self._agents[emission.agent] = event
+            events.append(event)
+        return events
 
     async def broadcast_json(self, payload: dict) -> None:
         text = json.dumps(payload, ensure_ascii=False)
@@ -119,6 +139,35 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+IDLE_ROAM_CONFIG = IdleRoamConfig()
+idle_roam_task: asyncio.Task[None] | None = None
+
+
+async def idle_roam_loop() -> None:
+    while True:
+        await asyncio.sleep(IDLE_ROAM_CONFIG.check_interval_s)
+        events = manager.collect_idle_roam_events(IDLE_ROAM_CONFIG)
+        for event in events:
+            await manager.broadcast_json({"type": "event", **event.model_dump()})
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    global idle_roam_task
+    if idle_roam_task is None or idle_roam_task.done():
+        idle_roam_task = asyncio.create_task(idle_roam_loop())
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    global idle_roam_task
+    if idle_roam_task is not None:
+        idle_roam_task.cancel()
+        try:
+            await idle_roam_task
+        except asyncio.CancelledError:
+            pass
+        idle_roam_task = None
 
 
 @app.get(

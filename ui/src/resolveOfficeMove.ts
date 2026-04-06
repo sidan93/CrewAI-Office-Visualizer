@@ -183,6 +183,7 @@ export function resolveOfficeMove(
   prev: PrevPos | undefined,
   map: OfficeMapData | null,
   occupied?: { work: OccupiedPos[]; relax: OccupiedPos[]; meeting: OccupiedPos[] },
+  relaxSalt?: string,
 ): { nx: number; ny: number; tx: number; ty: number } {
   const { w, h } = mapSize(map)
   const zones = map?.zones
@@ -196,8 +197,14 @@ export function resolveOfficeMove(
     pickSeatNorm(agent, work, occupied?.work ?? [], w, h, 'work') ??
     deskNorm(agent, work, w, h)
   const lounge =
-    pickSeatNorm(agent, relax, occupied?.relax ?? [], w, h, 'relax') ??
-    relaxTargetNorm(agent, relax, w, h)
+    pickSeatNorm(
+      agent,
+      relax,
+      occupied?.relax ?? [],
+      w,
+      h,
+      relaxSalt ? `relax:${relaxSalt}` : 'relax',
+    ) ?? relaxTargetNorm(agent, relax, w, h)
   const meetingSeat =
     pickSeatNorm(agent, meeting, occupied?.meeting ?? [], w, h, 'meeting') ??
     (meeting?.center ? norm(meeting.center.x, meeting.center.y, w, h) : desk)
