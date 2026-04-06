@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "crewai-office-visualizer": {
+      "transport": "streamable-http",
+      "url": "${OFFICE_VISUALIZER_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${OFFICE_VISUALIZER_MCP_TOKEN}"
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from enum import Enum
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,6 +63,14 @@ class OfficeEvent(BaseModel):
         description="Optional human-readable detail for current action.",
         examples=["Reviewing requirements", "Preparing response"],
     )
+    load: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "Cumulative load distribution in percent by stage. "
+            "Keys: idle, working, meeting. Sum is approximately 100."
+        ),
+        examples=[{"idle": 35.0, "working": 55.0, "meeting": 10.0}],
+    )
 
 
 class HealthResponse(BaseModel):
@@ -85,17 +94,56 @@ class ConnectionManager:
         self._connections: list[WebSocket] = []
         self._agents: dict[str, OfficeEvent] = {}
         self._idle_roam = IdleRoamTracker()
+        self._agent_stage_state: dict[str, dict] = {}
+
+    def _action_to_stage(self, action: AgentAction) -> str:
+        if action == AgentAction.MEETING:
+            return "meeting"
+        if action == AgentAction.WORKING:
+            return "working"
+        return "idle"
+
+    def _ensure_agent_stage_state(self, agent: str, now: float) -> dict:
+        state = self._agent_stage_state.get(agent)
+        if state is not None:
+            return state
+        state = {
+            "current_action": AgentAction.REGISTERED,
+            "changed_at": now,
+            "durations_s": {"idle": 0.0, "working": 0.0, "meeting": 0.0},
+        }
+        self._agent_stage_state[agent] = state
+        return state
+
+    def _snapshot_stage_percentages(self, agent: str, now: float) -> dict[str, float]:
+        state = self._ensure_agent_stage_state(agent, now)
+        durations = dict(state["durations_s"])
+        elapsed = max(0.0, now - float(state["changed_at"]))
+        current_stage = self._action_to_stage(state["current_action"])
+        durations[current_stage] += elapsed
+        total = durations["idle"] + durations["working"] + durations["meeting"]
+        if total <= 0:
+            return {"idle": 100.0, "working": 0.0, "meeting": 0.0}
+        return {
+            "idle": (durations["idle"] / total) * 100.0,
+            "working": (durations["working"] / total) * 100.0,
+            "meeting": (durations["meeting"] / total) * 100.0,
+        }
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self._connections.append(websocket)
+        now = time.monotonic()
         await websocket.send_text(
             json.dumps(
                 {
                     "type": "snapshot",
                     "agents": [
-                        agent.model_dump()
-                        for _, agent in sorted(self._agents.items(), key=lambda item: item[0])
+                        {
+                            **agent.model_dump(),
+                            "load": self._snapshot_stage_percentages(name, now),
+                        }
+                        for name, agent in sorted(self._agents.items(), key=lambda item: item[0])
                     ],
                 },
                 ensure_ascii=False,
@@ -106,9 +154,19 @@ class ConnectionManager:
         if websocket in self._connections:
             self._connections.remove(websocket)
 
-    def upsert_agent_event(self, event: OfficeEvent) -> None:
+    def upsert_agent_event(self, event: OfficeEvent) -> OfficeEvent:
+        now = time.monotonic()
+        stage_state = self._ensure_agent_stage_state(event.agent, now)
+        elapsed = max(0.0, now - float(stage_state["changed_at"]))
+        prev_stage = self._action_to_stage(stage_state["current_action"])
+        stage_state["durations_s"][prev_stage] += elapsed
+        stage_state["current_action"] = event.action
+        stage_state["changed_at"] = now
+        load = self._snapshot_stage_percentages(event.agent, now)
+        enriched_event = event.model_copy(update={"load": load})
         self._idle_roam.observe_event(event.agent, event.action.value)
-        self._agents[event.agent] = event
+        self._agents[event.agent] = enriched_event
+        return enriched_event
 
     def collect_idle_roam_events(self, config: IdleRoamConfig) -> list[OfficeEvent]:
         actions_by_agent = {
@@ -122,8 +180,7 @@ class ConnectionManager:
                 action=AgentAction.IDLE,
                 message=build_idle_roam_message(emission.sequence),
             )
-            self._agents[emission.agent] = event
-            events.append(event)
+            events.append(self.upsert_agent_event(event))
         return events
 
     async def broadcast_json(self, payload: dict) -> None:
@@ -193,8 +250,8 @@ def health() -> HealthResponse:
     response_model=AcceptedResponse,
 )
 async def post_event(event: OfficeEvent) -> AcceptedResponse:
-    manager.upsert_agent_event(event)
-    payload = {"type": "event", **event.model_dump()}
+    enriched_event = manager.upsert_agent_event(event)
+    payload = {"type": "event", **enriched_event.model_dump()}
     await manager.broadcast_json(payload)
     return AcceptedResponse(status="accepted")
 
