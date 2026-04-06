@@ -18,6 +18,9 @@ Environment variables:
     TASK_CHANGE_PROBABILITY=0.35
     MEETING_PROBABILITY=0.2
     IDLE_PROBABILITY=0.2
+    UPDATE_BATCH_MIN=2
+    UPDATE_BATCH_MAX=4
+    MEETING_MAX_PER_TICK=2
     TASK_POOL="Task A,Task B,Task C"
 """
 
@@ -63,6 +66,9 @@ class Config:
     task_change_probability: float
     meeting_probability: float
     idle_probability: float
+    update_batch_min: int
+    update_batch_max: int
+    meeting_max_per_tick: int
     task_pool: list[str]
 
 
@@ -174,6 +180,9 @@ def load_config() -> Config:
         task_change_probability=_env_float("TASK_CHANGE_PROBABILITY", 0.35),
         meeting_probability=_env_float("MEETING_PROBABILITY", 0.2),
         idle_probability=_env_float("IDLE_PROBABILITY", 0.2),
+        update_batch_min=_env_int("UPDATE_BATCH_MIN", 2),
+        update_batch_max=_env_int("UPDATE_BATCH_MAX", 4),
+        meeting_max_per_tick=_env_int("MEETING_MAX_PER_TICK", 2),
         task_pool=_parse_task_pool(),
     )
     validate_config(config)
@@ -203,6 +212,14 @@ def validate_config(config: Config) -> None:
             raise ValueError(f"{key} must be in [0, 1]")
     if config.meeting_probability + config.idle_probability > 1.0:
         raise ValueError("MEETING_PROBABILITY + IDLE_PROBABILITY must be <= 1")
+    if config.update_batch_min < 1:
+        raise ValueError("UPDATE_BATCH_MIN must be >= 1")
+    if config.update_batch_max < 1:
+        raise ValueError("UPDATE_BATCH_MAX must be >= 1")
+    if config.update_batch_min > config.update_batch_max:
+        raise ValueError("UPDATE_BATCH_MIN cannot be greater than UPDATE_BATCH_MAX")
+    if config.meeting_max_per_tick < 0:
+        raise ValueError("MEETING_MAX_PER_TICK must be >= 0")
 
 
 def setup_signal_handlers() -> None:
@@ -314,6 +331,7 @@ def register_agents(cfg: Config, agents: list[AgentState]) -> None:
     for agent in agents:
         message = f"Registered in workspace {cfg.workspace_id}"
         post_event(cfg, agent.name, "REGISTERED", message)
+        time.sleep(0.05)
 
 
 def run_simulation(cfg: Config) -> int:
@@ -336,11 +354,20 @@ def run_simulation(cfg: Config) -> int:
             break
 
         step += 1
-        batch_size = random.randint(1, len(agents))
+        max_batch = min(len(agents), cfg.update_batch_max)
+        min_batch = min(max_batch, cfg.update_batch_min)
+        batch_size = random.randint(min_batch, max_batch)
         selected = random.sample(agents, k=batch_size)
+        meetings_sent = 0
         for agent in selected:
             maybe_change_task(agent, cfg)
-            agent.current_action = choose_action(cfg)
+            next_action = choose_action(cfg)
+            if next_action == "MEETING":
+                if meetings_sent >= cfg.meeting_max_per_tick:
+                    next_action = "WORKING"
+                else:
+                    meetings_sent += 1
+            agent.current_action = next_action
             message = make_event_message(agent)
             ok = post_event(cfg, agent.name, agent.current_action, message)
             if not ok:
