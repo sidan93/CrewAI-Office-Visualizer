@@ -9,7 +9,7 @@ from app.idle_roam import IdleRoamConfig, IdleRoamTracker, build_idle_roam_messa
 
 app = FastAPI(
     title="CrewAI Office Visualizer API",
-    summary="Proxy API for ingesting agent events and streaming them to UI clients.",
+    summary="Backend API for ingesting agent events and streaming them to UI clients.",
     description=(
         "FastAPI sidecar for the office visualizer.\n\n"
         "- `POST /event`: accepts a CrewAI agent event.\n"

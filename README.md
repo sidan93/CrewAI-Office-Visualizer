@@ -51,7 +51,7 @@ Smoke scripts:
 
 | Path | Purpose |
 |------|---------|
-| `proxy/` | FastAPI backend (event ingestion and fan-out). |
+| `backend/` | FastAPI backend (event ingestion and fan-out). |
 | `ui/` | React frontend (office visualization). |
 | `tests/` | Bash smoke scripts (`curl`). |
 | `utils/` | MCP bootstrap templates. |

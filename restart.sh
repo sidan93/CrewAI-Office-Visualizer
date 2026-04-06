@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild and restart the full Docker Compose stack (proxy + UI).
+# Rebuild and restart the full Docker Compose stack (backend + UI).
 set -euo pipefail
 cd "$(dirname "$0")"
 docker compose down

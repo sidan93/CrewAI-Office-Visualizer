@@ -1,4 +1,4 @@
-/** WebSocket URL: VITE_WS_URL in Docker build, else dev proxy or host:18765 (compose default). */
+/** WebSocket URL: VITE_WS_URL in Docker build, else Vite dev proxy or host:18765 (compose default). */
 const DEFAULT_HOST_WS_PORT = 18765
 
 export function getWsUrl(): string {

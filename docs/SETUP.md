@@ -5,7 +5,7 @@
 The stack uses non-default host ports to reduce collisions:
 
 - UI: `17300` -> container `80`
-- Proxy API: `18765` -> container `8000`
+- Backend API: `18765` -> container `8000`
 
 From repository root:
 
@@ -19,26 +19,26 @@ Or rebuild + restart:
 ./restart.sh
 ```
 
-If you change proxy port mapping in `docker-compose.yml`, rebuild the UI image so `VITE_WS_URL` matches your setup.
+If you change backend port mapping in `docker-compose.yml`, rebuild the UI image so `VITE_WS_URL` matches your setup.
 
 ## Service endpoints
 
 | Service | URL | Notes |
 |--------|-----|--------|
 | UI | [http://localhost:17300](http://localhost:17300) | Browser app served by nginx in container. |
-| Proxy API | [http://localhost:18765](http://localhost:18765) | `GET /health`, `POST /event`, `GET /ws`. |
+| Backend API | [http://localhost:18765](http://localhost:18765) | `GET /health`, `POST /event`, `GET /ws`. |
 | Swagger | [http://localhost:18765/docs](http://localhost:18765/docs) | OpenAPI UI. |
 | ReDoc | [http://localhost:18765/redoc](http://localhost:18765/redoc) | Alternate API docs. |
 | OpenAPI JSON | [http://localhost:18765/openapi.json](http://localhost:18765/openapi.json) | Raw schema. |
 
 ## Local development (without Docker)
 
-### Proxy
+### Backend
 
-From `proxy/` (Python 3.12):
+From `backend/` (Python 3.12):
 
 ```bash
-cd proxy
+cd backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

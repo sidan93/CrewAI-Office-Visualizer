@@ -1,8 +1,8 @@
 name: crewai-office-visualizer
 
 services:
-  proxy:
-    build: ./proxy
+  backend:
+    build: ./backend
     ports:
       - "18765:8000"
     restart: unless-stopped
@@ -15,5 +15,5 @@ services:
     ports:
       - "17300:80"
     depends_on:
-      - proxy
+      - backend
     restart: unless-stopped
