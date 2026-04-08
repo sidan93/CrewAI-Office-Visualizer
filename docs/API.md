@@ -1,55 +1,10 @@
 # API Contract
 
-## Overview
-
-The API is workspace-scoped. Every write or stream operation is tied to a single workspace:
-
-- create workspace: `POST /workspaces`
-- send event: `POST /w/{workspace_id}/event` (requires Bearer token)
-- stream updates: `GET /w/{workspace_id}/ws?token=...` (requires workspace token)
-
-Terminology:
-
-- Canonical API name: `workspace_id`
-- Integration alias (optional): `project_id` (same value, different name in client config)
-
-## Create workspace
-
-`POST /workspaces`
-
-Request:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | no | Optional workspace display name. |
-
-Response:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `workspace_id` | string | Workspace id for URL path (`/w/{workspace_id}`). |
-| `token` | string | Workspace token. Returned only once. |
-
-If your integration stores this id as `project_id`, pass that same value to the `{workspace_id}` path segment.
-
-Example:
-
-```bash
-curl -sS -X POST http://127.0.0.1:18765/workspaces \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"Team Alpha"}'
-```
-
 ## Event endpoint
 
-`POST /w/{workspace_id}/event`
+`POST /event`
 
-Headers:
-
-- `Authorization: Bearer <workspace_token>`
-- `Content-Type: application/json`
-
-Payload:
+Minimal JSON payload:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -64,30 +19,16 @@ Allowed `action` values:
 - `MEETING`
 - `WORKING`
 
-Validation notes:
+Any other value returns HTTP `422`.
 
-- Invalid or missing token: `401`
-- Token from another workspace: `403`
-- Invalid action enum: `422`
-
-Example:
+## Example request
 
 ```bash
-curl -sS -X POST "http://127.0.0.1:18765/w/${WORKSPACE_ID}/event" \
-  -H "Authorization: Bearer ${WORKSPACE_TOKEN}" \
+curl -sS -X POST http://127.0.0.1:18765/event \
   -H 'Content-Type: application/json' \
   -d '{"agent":"demo","action":"WORKING","message":"Preparing report"}'
 ```
 
 ## Realtime stream
 
-`GET /w/{workspace_id}/ws?token=<workspace_token>`
-
-The stream sends:
-
-- initial snapshot:
-  - `{"type":"snapshot","workspace_id":"...","agents":[...]}`
-- subsequent events:
-  - `{"type":"event","workspace_id":"...","agent":"...","action":"...","message":"...","load":{...}}`
-
-If token is invalid or does not match path workspace, server closes connection with policy violation.
+`GET /ws` (WebSocket) provides live event updates for the UI.

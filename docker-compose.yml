@@ -3,8 +3,6 @@ name: crewai-office-visualizer
 services:
   backend:
     build: ./backend
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/office_visualizer.db}
     ports:
       - "18765:8000"
     restart: unless-stopped
@@ -13,7 +11,7 @@ services:
     build:
       context: ./ui
       args:
-        VITE_WS_URL: ws://localhost:18765
+        VITE_WS_URL: ws://localhost:18765/ws
     ports:
       - "17300:80"
     depends_on:

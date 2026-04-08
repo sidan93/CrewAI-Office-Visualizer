@@ -4,7 +4,7 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from 'react'
-import { getWorkspaceWsUrl } from '../workspaceApi'
+import { getWsUrl } from '../wsUrl'
 import type { OfficeMapData } from '../resolveOfficeMove'
 import { applyOfficeEvent } from './agentState'
 import type { AgentVisual, OfficeEventPayload, OfficeSnapshotPayload, UiEvent } from './types'
@@ -12,8 +12,6 @@ import type { AgentVisual, OfficeEventPayload, OfficeSnapshotPayload, UiEvent } 
 type UseOfficeRealtimeArgs = {
   agentsRef: MutableRefObject<Map<string, AgentVisual>>
   mapDataDraftRef: MutableRefObject<OfficeMapData | null>
-  workspaceId: string
-  workspaceToken: string
   setStatus: Dispatch<SetStateAction<'connecting' | 'open' | 'closed'>>
   setLastError: Dispatch<SetStateAction<string | null>>
   setRecentEvents: Dispatch<SetStateAction<UiEvent[]>>
@@ -24,8 +22,6 @@ type UseOfficeRealtimeArgs = {
 export function useOfficeRealtime({
   agentsRef,
   mapDataDraftRef,
-  workspaceId,
-  workspaceToken,
   setStatus,
   setLastError,
   setRecentEvents,
@@ -53,7 +49,7 @@ export function useOfficeRealtime({
       setRecentEvents((prev) => [next, ...prev].slice(0, maxEvents))
     }
 
-    const url = getWorkspaceWsUrl(workspaceId, workspaceToken)
+    const url = getWsUrl()
     const ws = new WebSocket(url)
 
     ws.onopen = () => {
@@ -115,15 +111,5 @@ export function useOfficeRealtime({
     return () => {
       ws.close()
     }
-  }, [
-    agentsRef,
-    eventSeqRef,
-    mapDataDraftRef,
-    maxEvents,
-    setLastError,
-    setRecentEvents,
-    setStatus,
-    workspaceId,
-    workspaceToken,
-  ])
+  }, [agentsRef, eventSeqRef, mapDataDraftRef, maxEvents, setLastError, setRecentEvents, setStatus])
 }

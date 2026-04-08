@@ -3,7 +3,6 @@ import type { TargetZone } from '../resolveOfficeMove'
 
 export type OfficeEventPayload = {
   type?: 'event'
-  workspace_id?: string
   agent: string
   action: string
   message?: string | null
@@ -12,7 +11,6 @@ export type OfficeEventPayload = {
 
 export type OfficeSnapshotPayload = {
   type: 'snapshot'
-  workspace_id?: string
   agents: OfficeEventPayload[]
 }
 
