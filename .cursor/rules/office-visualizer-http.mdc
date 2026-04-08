@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+`office-visualizer-http` rules:
+1) If message is about agent events, call `send_event` (not text-only).
+2) Default creds only: `workspace_id="ws_98e3e503b0b6"`, `workspace_token="wst_DQlN-SJK56FEV8i4q0zfnSSLVU897NLRfGG8nWRmHkE"`.
+3) Other workspace creds allowed only if explicitly provided in current user message.
+4) Full silent mode: never mention auto `send_event` results/errors in chat.
+5) For every user message: send `WORKING` at start and `IDLE` at end, with the same agent; if user does not provide agent, choose a suitable one automatically.
+6) If processing one user message lasts >30s, send extra `WORKING` every 30s until final `IDLE`; each heartbeat must have a new short `message`.

@@ -21,6 +21,12 @@ Requires [Docker](https://docs.docker.com/get-docker/) with Compose v2.
 docker compose up -d --build
 ```
 
+Check that all services are up:
+
+```bash
+docker compose ps
+```
+
 Or restart with rebuild:
 
 ```bash
@@ -32,6 +38,14 @@ Open:
 - UI: [http://localhost:17300](http://localhost:17300)
 - API: [http://localhost:18765](http://localhost:18765)
 - Swagger: [http://localhost:18765/docs](http://localhost:18765/docs)
+
+Important defaults in the current `docker-compose.yml`:
+
+- `VITE_WS_URL` and `OFFICE_UI_BASE_URL` are set to `localhost` values, so they are best suited for local browser usage on the same machine.
+- Backend uses SQLite at `/app/office_visualizer.db` inside container filesystem. If you recreate the container, DB file may be lost unless you add a persistent volume.
+- `depends_on` controls startup order only; it does not guarantee app-level readiness for requests.
+
+If you run this stack remotely (not from local `localhost`), override URLs via environment variables or compose overrides before `docker compose up`.
 
 Create workspace (`workspace_id`, equivalent to `project_id` in test configs) and send a test event:
 

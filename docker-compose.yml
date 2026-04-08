@@ -19,3 +19,18 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  mcp:
+    build: ./mcp
+    environment:
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=18900
+      - MCP_PATH=/mcp
+      - OFFICE_VISUALIZER_API_URL=http://backend:8000
+      - OFFICE_UI_BASE_URL=http://localhost:17300
+      - OFFICE_VISUALIZER_HTTP_TIMEOUT=10
+    ports:
+      - "18900:18900"
+    depends_on:
+      - backend
+    restart: unless-stopped
